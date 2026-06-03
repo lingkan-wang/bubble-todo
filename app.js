@@ -17,7 +17,7 @@ const hint = document.getElementById('hint');
 const DRAG_THRESHOLD = 6;
 const PARKED_SIZE = 60;            // smaller bubbles to fit the frame
 const BUBBLE_OPTS = { min: 80, max: 150, per: 4.5 };
-const parkedOpts = () => ({ originX: 18, originY: 16, cols: 3, gap: PARKED_SIZE + 12 });
+const parkedOpts = () => ({ originX: 18, originY: 56, cols: 3, gap: PARKED_SIZE + 12 });
 function bubbleSizeFor(len) { return layout.bubbleSize(len, BUBBLE_OPTS); }
 function newId() { return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
