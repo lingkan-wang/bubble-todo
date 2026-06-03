@@ -15,8 +15,14 @@ body { font-family: -apple-system, "PingFang SC", sans-serif; -webkit-user-selec
 
 /* Girl anchored bottom-right of the frame */
 #girl-wrap { position: absolute; right: 22px; bottom: 14px; width: 120px; pointer-events: none; }
-#girl { width: 100%; height: auto; display: block; pointer-events: auto; cursor: grab; -webkit-user-drag: none; transform-origin: 50% 100%; }
+#girl { width: 100%; height: auto; display: block; pointer-events: auto; cursor: grab; -webkit-user-drag: none; transform-origin: 50% 100%; animation: girlBreathe 4s ease-in-out infinite; }
 #girl-wrap.dragging #girl { cursor: grabbing; }
+
+/* Idle "breathing / blowing" — subtle body rise-fall + tiny forward lean */
+@keyframes girlBreathe {
+  0%, 100% { transform: translateY(0) scaleY(1) rotate(0deg); }
+  50%      { transform: translateY(-1.5px) scaleY(1.006) rotate(-0.7deg); }
+}
 
 /* Girl puff when blowing (double-click) */
 @keyframes girlBlow {
@@ -34,6 +40,12 @@ body { font-family: -apple-system, "PingFang SC", sans-serif; -webkit-user-selec
   position: absolute; inset: 0;
   background: url("assets/bubble.png") center/contain no-repeat;
   pointer-events: auto;
+  animation: bubbleBreathe 4s ease-in-out infinite; /* in phase with the girl */
+}
+/* very subtle inflate/deflate as she breathes into it */
+@keyframes bubbleBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
 }
 .bubble .bubble-text {
   position: relative; z-index: 1;
@@ -101,3 +113,12 @@ body { font-family: -apple-system, "PingFang SC", sans-serif; -webkit-user-selec
 /* Pop-to-complete: rupture ring + droplet spray (Web Animations API) */
 .burst-ring { position: absolute; z-index: 55; pointer-events: none; border-radius: 50%; box-sizing: border-box; border: 2px solid rgba(244, 215, 116, 0.9); will-change: transform, opacity; }
 .droplet { position: absolute; z-index: 60; pointer-events: none; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3c4, #f4d774); will-change: transform, opacity; }
+
+/* Respect reduced-motion: stop the continuous idle loops (breathing + drift).
+   User-triggered feedback (blow/inflate/reblow/pop) has higher specificity and
+   still plays, so the demo stays usable. */
+@media (prefers-reduced-motion: reduce) {
+  #girl { animation: none; }
+  .bubble .bubble-img { animation: none; }
+  #parked-layer .parked.floating { animation: none; }
+}
