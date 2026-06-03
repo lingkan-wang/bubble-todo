@@ -45,7 +45,7 @@ body { font-family: -apple-system, "PingFang SC", sans-serif; -webkit-user-selec
   outline: none; caret-color: #7a5a12;
 }
 .bubble .bubble-text:focus, .bubble .bubble-text:focus-visible { outline: none; box-shadow: none; }
-.bubble .bubble-text:empty:not(:focus)::before { content: "写点什么…"; color: #b89a55; }
+.bubble .bubble-text:empty:not(:focus)::before { content: "Write a to-do…"; color: #b89a55; }
 
 /* Blinking caret guide when empty + focused */
 .bubble .bubble-text:empty:focus { caret-color: transparent; }

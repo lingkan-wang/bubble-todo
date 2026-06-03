@@ -318,7 +318,7 @@ function spawnDroplets(cx, cy, radius) {
 // ---- init: seed a couple of example to-dos so the frame looks alive --------
 function seed() {
   let s = store.initialState();
-  const samples = ['给妈妈打电话', '浇花 🌿'];
+  const samples = ['Call Mom', 'Water the plants 🌿'];
   const opts = parkedOpts();
   samples.forEach((text, i) => {
     const t = layout.parkedTarget(i, opts);
