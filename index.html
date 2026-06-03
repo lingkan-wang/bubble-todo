@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bubble To-do</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage">
+    <div id="fly-layer"></div>
+    <div id="parked-layer"></div>
+    <div id="hint">点泡泡写字　·　双击女孩吹出　·　点泡泡完成 ✓</div>
+    <div id="girl-wrap">
+      <img id="girl" src="assets/girl.png" draggable="false" alt="" />
+      <div id="attached-bubble" class="bubble">
+        <div class="bubble-img"></div>
+        <div class="bubble-text" contenteditable="false" spellcheck="false"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

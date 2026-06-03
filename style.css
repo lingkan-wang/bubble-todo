@@ -1,0 +1,105 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
+body { font-family: -apple-system, "PingFang SC", sans-serif; -webkit-user-select: none; user-select: none; }
+
+#stage { position: fixed; inset: 0; pointer-events: none; }
+#fly-layer, #parked-layer { position: absolute; inset: 0; pointer-events: none; }
+
+/* subtle one-line hint that fades after first interaction */
+#hint {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: #b08a3a; letter-spacing: .2px;
+  background: rgba(255,255,255,.6); border: 1px solid rgba(200,160,70,.3);
+  padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  transition: opacity .5s ease; pointer-events: none; z-index: 40;
+}
+#hint.hidden { opacity: 0; }
+
+/* Girl anchored bottom-right of the frame */
+#girl-wrap { position: absolute; right: 22px; bottom: 14px; width: 120px; pointer-events: none; }
+#girl { width: 100%; height: auto; display: block; pointer-events: auto; cursor: grab; -webkit-user-drag: none; transform-origin: 50% 100%; }
+#girl-wrap.dragging #girl { cursor: grabbing; }
+
+/* Girl puff when blowing (double-click) */
+@keyframes girlBlow {
+  0%   { transform: rotate(0) translate(0,0) scale(1, 1); }
+  25%  { transform: rotate(-1.5deg) translate(-2px, 1px) scale(1.015, .985); }
+  55%  { transform: rotate(-3.5deg) translate(-5px, 2px) scale(1.03, .97); }
+  75%  { transform: rotate(1.5deg) translate(2px, -1px) scale(.99, 1.01); }
+  100% { transform: rotate(0) translate(0,0) scale(1, 1); }
+}
+#girl.blowing { animation: girlBlow 0.6s cubic-bezier(.34, 1.15, .5, 1); }
+
+/* Bubble = watercolor PNG with text overlaid; fixed so JS places it in viewport coords */
+.bubble { position: fixed; display: grid; place-items: center; pointer-events: none; }
+.bubble .bubble-img {
+  position: absolute; inset: 0;
+  background: url("assets/bubble.png") center/contain no-repeat;
+  pointer-events: auto;
+}
+.bubble .bubble-text {
+  position: relative; z-index: 1;
+  max-width: 72%; max-height: 72%; overflow: hidden;
+  text-align: center; line-height: 1.25; color: #7a5a12;
+  font-size: 13px; word-break: break-word; pointer-events: auto;
+  outline: none; caret-color: #7a5a12;
+}
+.bubble .bubble-text:focus, .bubble .bubble-text:focus-visible { outline: none; box-shadow: none; }
+.bubble .bubble-text:empty:not(:focus)::before { content: "写点什么…"; color: #b89a55; }
+
+/* Blinking caret guide when empty + focused */
+.bubble .bubble-text:empty:focus { caret-color: transparent; }
+.bubble .bubble-text:empty:focus::after {
+  content: ""; display: inline-block;
+  width: 2px; height: 1.05em; background: #7a5a12; border-radius: 1px;
+  vertical-align: middle; animation: caretBlink 1.06s steps(1, start) infinite;
+}
+@keyframes caretBlink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+/* Bubble inflates as she puffs */
+@keyframes inflate { 0% { transform: scale(1); } 100% { transform: scale(1.12); } }
+.bubble.inflate .bubble-img { animation: inflate 0.34s ease-out forwards; }
+
+/* Shake when blowing an empty bubble */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); } 40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); } 80% { transform: translateX(4px); }
+}
+.bubble.shake { animation: shake 0.4s ease; }
+
+/* Fresh empty bubble re-blown at the straw */
+@keyframes reblow { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.bubble.reblow .bubble-img { animation: reblow 0.5s ease-out; }
+
+/* Flying bubble clone */
+.fly-bubble { position: absolute; background: url("assets/bubble.png") center/contain no-repeat; pointer-events: none; will-change: transform; }
+
+/* Parked bubbles drifting near top-left */
+#parked-layer .parked {
+  position: absolute; display: grid; place-items: center;
+  cursor: pointer; pointer-events: auto; will-change: transform;
+  transition: width .2s cubic-bezier(.23,1,.32,1), height .2s cubic-bezier(.23,1,.32,1);
+}
+#parked-layer .parked.expanded { z-index: 20; }
+#parked-layer .parked.expanded .ptext {
+  display: block; -webkit-line-clamp: unset; max-width: 78%; max-height: 80%;
+  overflow: hidden; font-size: 12px;
+}
+#parked-layer .parked .pbg { position: absolute; inset: 0; background: url("assets/bubble.png") center/contain no-repeat; }
+#parked-layer .parked .ptext {
+  position: relative; z-index: 1; max-width: 74%; max-height: 70%; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  text-align: center; line-height: 1.18; font-size: 11px; color: #7a5a12; word-break: break-word;
+}
+#parked-layer .parked.dragging { cursor: grabbing; z-index: 10; }
+
+@keyframes floaty {
+  0%, 100% { transform: translate(0, 0) rotate(var(--rot, 0deg)); }
+  50% { transform: translate(var(--fx, 5px), var(--fy, -8px)) rotate(calc(var(--rot, 0deg) * -1)); }
+}
+#parked-layer .parked.floating { animation: floaty var(--dur, 5s) ease-in-out infinite; animation-delay: var(--delay, 0s); }
+
+/* Pop-to-complete: rupture ring + droplet spray (Web Animations API) */
+.burst-ring { position: absolute; z-index: 55; pointer-events: none; border-radius: 50%; box-sizing: border-box; border: 2px solid rgba(244, 215, 116, 0.9); will-change: transform, opacity; }
+.droplet { position: absolute; z-index: 60; pointer-events: none; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3c4, #f4d774); will-change: transform, opacity; }
