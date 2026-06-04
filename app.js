@@ -17,6 +17,7 @@ const peek = document.getElementById('peek');
 
 const DRAG_THRESHOLD = 6;
 let mode = 'peek'; // 'peek' (collapsed, only the head) | 'open' (full scene)
+let justDragged = false; // suppress the click right after dragging the girl
 const PARKED_SIZE = 60;            // smaller bubbles to fit the frame
 const BUBBLE_OPTS = { min: 80, max: 150, per: 4.5 };
 const parkedOpts = () => ({ originX: 18, originY: 56, cols: 3, gap: PARKED_SIZE + 12 });
@@ -82,6 +83,8 @@ attachedText.addEventListener('blur', () => attachedText.setAttribute('contented
 function openScene() {
   if (mode === 'open') return;
   mode = 'open';
+  // reset to home so she rises from the dock (clears any prior drag)
+  girlWrap.style.left = ''; girlWrap.style.top = ''; girlWrap.style.right = ''; girlWrap.style.bottom = '';
   document.body.classList.remove('mode-peek');
   document.body.classList.add('mode-open');
   // keep the bubble glued to the straw while she rises
@@ -100,7 +103,7 @@ function collapseScene() {
 }
 peek.addEventListener('click', (e) => { e.stopPropagation(); openScene(); });
 window.addEventListener('click', (e) => {
-  if (mode !== 'open') return;
+  if (mode !== 'open' || justDragged) return;
   if (e.target.closest('#girl, #attached-bubble, .parked, #peek')) return;
   collapseScene();
 });
@@ -130,6 +133,40 @@ function onGirlDblClick() {
 }
 
 girlImg.addEventListener('dblclick', onGirlDblClick);
+
+// ---- drag the girl freely while she's out (clamped to the frame) -----------
+let press = null;
+function onGirlPointerDown(e) {
+  if (e.button !== 0 || mode !== 'open') return;
+  const box = girlBox();
+  press = { startX: e.clientX, startY: e.clientY, offX: e.clientX - box.x, offY: e.clientY - box.y, dragging: false };
+  try { girlImg.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+}
+function onGirlPointerMove(e) {
+  if (!press) return;
+  if (!press.dragging && Math.hypot(e.clientX - press.startX, e.clientY - press.startY) > DRAG_THRESHOLD) {
+    press.dragging = true;
+    girlWrap.classList.add('dragging');
+  }
+  if (press.dragging) {
+    const box = girlBox();
+    girlWrap.style.left = clamp(e.clientX - press.offX, 0, window.innerWidth - box.w) + 'px';
+    girlWrap.style.top = clamp(e.clientY - press.offY, 0, window.innerHeight - box.h) + 'px';
+    girlWrap.style.right = 'auto';
+    girlWrap.style.bottom = 'auto';
+    positionAttachedBubble();
+  }
+}
+function onGirlPointerUp() {
+  if (!press) return;
+  if (press.dragging) { justDragged = true; setTimeout(() => { justDragged = false; }, 0); }
+  girlWrap.classList.remove('dragging');
+  press = null;
+}
+girlImg.addEventListener('pointerdown', onGirlPointerDown);
+girlImg.addEventListener('pointermove', onGirlPointerMove);
+girlImg.addEventListener('pointerup', onGirlPointerUp);
+girlImg.addEventListener('pointercancel', () => { girlWrap.classList.remove('dragging'); press = null; });
 
 // ---- blow → fly → re-blow --------------------------------------------------
 function blow() {
