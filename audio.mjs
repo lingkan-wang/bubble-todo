@@ -12,47 +12,39 @@ function ac() {
   return ctx;
 }
 
-// Gentle airy "puff" — filtered noise swell + a soft rising tone (inflation).
+// "Thin straw blow" — a short, realistic exhale: two filtered-noise breath
+// layers shaped like a quick puff through a straw (no tones, no sparkle).
 export function playBlow() {
   const c = ac();
   if (!c) return;
   const t = c.currentTime;
-  const dur = 0.42;
 
-  const buf = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-  const noise = c.createBufferSource();
-  noise.buffer = buf;
+  const breath = (dur, peak, f0, f1, f2, q, lp) => {
+    const len = Math.floor(c.sampleRate * (dur + 0.05));
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const ns = c.createBufferSource();
+    ns.buffer = buf;
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 180;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = q;
+    bp.frequency.setValueAtTime(f0, t);
+    bp.frequency.linearRampToValueAtTime(f1, t + dur * 0.5);
+    bp.frequency.linearRampToValueAtTime(f2, t + dur);
+    const lpf = c.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = lp;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + dur * 0.42);       // build airflow
+    g.gain.linearRampToValueAtTime(peak * 0.82, t + dur * 0.72); // steady
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);       // taper
+    ns.connect(hp).connect(bp).connect(lpf).connect(g).connect(c.destination);
+    ns.start(t);
+    ns.stop(t + dur + 0.05);
+  };
 
-  const bp = c.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.Q.value = 0.7;
-  bp.frequency.setValueAtTime(480, t);
-  bp.frequency.exponentialRampToValueAtTime(1500, t + dur * 0.55);
-  bp.frequency.exponentialRampToValueAtTime(720, t + dur);
-
-  const ng = c.createGain();
-  ng.gain.setValueAtTime(0.0001, t);
-  ng.gain.exponentialRampToValueAtTime(0.2, t + 0.13); // swell in
-  ng.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-
-  noise.connect(bp).connect(ng).connect(c.destination);
-  noise.start(t);
-  noise.stop(t + dur);
-
-  // soft rising tone to suggest the bubble filling
-  const o = c.createOscillator();
-  const og = c.createGain();
-  o.type = 'sine';
-  o.frequency.setValueAtTime(240, t);
-  o.frequency.exponentialRampToValueAtTime(440, t + dur * 0.8);
-  og.gain.setValueAtTime(0.0001, t);
-  og.gain.exponentialRampToValueAtTime(0.05, t + 0.16);
-  og.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(og).connect(c.destination);
-  o.start(t);
-  o.stop(t + dur);
+  // shortened straw blow: focused airflow + a softer low body
+  breath(0.36, 0.42, 700, 1150, 820, 1.4, 3200);
+  breath(0.32, 0.14, 420, 520, 440, 0.7, 2200);
 }
 
 // "Switch 清脆 Pip" — a clean rising sine pip + a tiny high click transient.
