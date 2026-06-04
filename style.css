@@ -15,13 +15,14 @@ body { font-family: -apple-system, "PingFang SC", sans-serif; -webkit-user-selec
 
 /* Girl anchored bottom-right of the frame */
 #girl-wrap { position: absolute; right: 22px; bottom: 14px; width: 120px; pointer-events: none; }
-#girl { width: 100%; height: auto; display: block; pointer-events: auto; cursor: grab; -webkit-user-drag: none; transform-origin: 50% 100%; animation: girlBreathe 4s ease-in-out infinite; }
+#girl { width: 100%; height: auto; display: block; pointer-events: auto; cursor: grab; -webkit-user-drag: none; transform-origin: 50% 100%; animation: girlBreathe 3.6s ease-in-out infinite; }
 #girl-wrap.dragging #girl { cursor: grabbing; }
 
-/* Idle "breathing / blowing" — subtle body rise-fall + tiny forward lean */
+/* Idle breathing — body rise-fall. Girl + bubble share this (same translate) so
+   the bubble stays glued to the straw as she bobs. */
 @keyframes girlBreathe {
-  0%, 100% { transform: translateY(0) scaleY(1) rotate(0deg); }
-  50%      { transform: translateY(-1.5px) scaleY(1.006) rotate(-0.7deg); }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
 }
 
 /* Girl puff when blowing (double-click) */
@@ -35,17 +36,17 @@ body { font-family: -apple-system, "PingFang SC", sans-serif; -webkit-user-selec
 #girl.blowing { animation: girlBlow 0.6s cubic-bezier(.34, 1.15, .5, 1); }
 
 /* Bubble = watercolor PNG with text overlaid; fixed so JS places it in viewport coords */
-.bubble { position: fixed; display: grid; place-items: center; pointer-events: none; }
+.bubble { position: fixed; display: grid; place-items: center; pointer-events: none; animation: girlBreathe 3.6s ease-in-out infinite; }
 .bubble .bubble-img {
   position: absolute; inset: 0;
   background: url("assets/bubble.png") center/contain no-repeat;
   pointer-events: auto;
-  animation: bubbleBreathe 4s ease-in-out infinite; /* in phase with the girl */
+  animation: bubbleBreathe 3.6s ease-in-out infinite; /* in phase with the girl */
 }
-/* very subtle inflate/deflate as she breathes into it */
+/* inflate/deflate as she breathes into it */
 @keyframes bubbleBreathe {
   0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.035); }
+  50%      { transform: scale(1.075); }
 }
 .bubble .bubble-text {
   position: relative; z-index: 1;
@@ -119,6 +120,6 @@ body { font-family: -apple-system, "PingFang SC", sans-serif; -webkit-user-selec
    still plays, so the demo stays usable. */
 @media (prefers-reduced-motion: reduce) {
   #girl { animation: none; }
-  .bubble .bubble-img { animation: none; }
+  .bubble, .bubble .bubble-img { animation: none; }
   #parked-layer .parked.floating { animation: none; }
 }
