@@ -23,7 +23,8 @@ body.mode-peek #hint { opacity: 0; }
   transition: transform .45s cubic-bezier(.34, 1.45, .5, 1), opacity .3s ease;
 }
 #peek-hint {
-  position: absolute; right: 20px; bottom: 80px;
+  /* same horizontal span as #peek so the centered text sits right above her head */
+  position: absolute; right: 16px; width: 116px; bottom: 86px; text-align: center;
   font-size: 11px; color: rgba(0,0,0,.4); letter-spacing: .2px;
   pointer-events: none; z-index: 51; white-space: nowrap; transition: opacity .3s ease;
 }
