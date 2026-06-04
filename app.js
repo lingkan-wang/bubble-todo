@@ -13,8 +13,10 @@ const attachedText = attached.querySelector('.bubble-text');
 const parkedLayer = document.getElementById('parked-layer');
 const flyLayer = document.getElementById('fly-layer');
 const hint = document.getElementById('hint');
+const peek = document.getElementById('peek');
 
 const DRAG_THRESHOLD = 6;
+let mode = 'peek'; // 'peek' (collapsed, only the head) | 'open' (full scene)
 const PARKED_SIZE = 60;            // smaller bubbles to fit the frame
 const BUBBLE_OPTS = { min: 80, max: 150, per: 4.5 };
 const parkedOpts = () => ({ originX: 18, originY: 56, cols: 3, gap: PARKED_SIZE + 12 });
@@ -76,48 +78,37 @@ attachedText.addEventListener('input', () => {
 });
 attachedText.addEventListener('blur', () => attachedText.setAttribute('contenteditable', 'false'));
 
-// ---- girl gesture: drag (clamped to frame) + double-click to blow ----------
-let press = null;
-let blowing = false;
+// ---- peek / open state machine ---------------------------------------------
+function openScene() {
+  if (mode === 'open') return;
+  mode = 'open';
+  document.body.classList.remove('mode-peek');
+  document.body.classList.add('mode-open');
+  // keep the bubble glued to the straw while she rises
+  const start = performance.now();
+  (function track() {
+    positionAttachedBubble();
+    if (performance.now() - start < 620) requestAnimationFrame(track);
+  })();
+}
+function collapseScene() {
+  if (mode === 'peek') return;
+  mode = 'peek';
+  if (document.activeElement === attachedText) attachedText.blur();
+  document.body.classList.remove('mode-open');
+  document.body.classList.add('mode-peek');
+}
+peek.addEventListener('click', (e) => { e.stopPropagation(); openScene(); });
+window.addEventListener('click', (e) => {
+  if (mode !== 'open') return;
+  if (e.target.closest('#girl, #attached-bubble, .parked, #peek')) return;
+  collapseScene();
+});
 
+// ---- blow gesture: double-click the girl -----------------------------------
+let blowing = false;
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
-function onGirlPointerDown(e) {
-  if (e.button !== 0) return;
-  const box = girlBox();
-  press = { startX: e.clientX, startY: e.clientY, offX: e.clientX - box.x, offY: e.clientY - box.y, dragging: false };
-  try { girlImg.setPointerCapture(e.pointerId); } catch { /* ignore */ }
-}
-function onGirlPointerMove(e) {
-  if (!press) return;
-  if (!press.dragging && Math.hypot(e.clientX - press.startX, e.clientY - press.startY) > DRAG_THRESHOLD) {
-    press.dragging = true;
-    girlWrap.classList.add('dragging');
-  }
-  if (press.dragging) {
-    const box = girlBox();
-    const nx = clamp(e.clientX - press.offX, 0, window.innerWidth - box.w);
-    const ny = clamp(e.clientY - press.offY, 0, window.innerHeight - box.h);
-    girlWrap.style.left = nx + 'px';
-    girlWrap.style.top = ny + 'px';
-    girlWrap.style.right = 'auto';
-    girlWrap.style.bottom = 'auto';
-    positionAttachedBubble();
-  }
-}
-function onGirlPointerUp() {
-  if (!press) return;
-  if (press.dragging) {
-    const box = girlBox();
-    state = store.moveGirl(state, box.x, box.y);
-  }
-  cancelPress();
-}
-function cancelPress() {
-  if (!press) return;
-  girlWrap.classList.remove('dragging');
-  press = null;
-}
 function shakeEmptyBubble() {
   attached.classList.remove('shake');
   void attached.offsetWidth;
@@ -138,10 +129,6 @@ function onGirlDblClick() {
   setTimeout(() => girlImg.classList.remove('blowing'), 620);
 }
 
-girlImg.addEventListener('pointerdown', onGirlPointerDown);
-girlImg.addEventListener('pointermove', onGirlPointerMove);
-girlImg.addEventListener('pointerup', onGirlPointerUp);
-girlImg.addEventListener('pointercancel', cancelPress);
 girlImg.addEventListener('dblclick', onGirlDblClick);
 
 // ---- blow → fly → re-blow --------------------------------------------------
@@ -327,6 +314,5 @@ function seed() {
   return s;
 }
 state = seed();
-placeGirl();
 renderAttached();
 renderParked();
